@@ -77,6 +77,7 @@ For in depth implementation details refer this [example project](https://github.
 
 
 # edge cases
+
  * What if the reference of one table points to other table and local db don't have that table ? (Say ticket table has assignee id as a column and in the server side assignee id is the userid of users table)
  
  Solution 1 : Local table needs to be modified in accordance with the data it needs to show.
@@ -101,6 +102,9 @@ For in depth implementation details refer this [example project](https://github.
 
  * Periodic needs to include GET first and then only it should post,put.
 
+# Useful Links
 
-
+https://docs.microsoft.com/en-us/azure/app-service-mobile/app-service-mobile-offline-data-sync 
+https://docs.google.com/document/d/1GeMxb9cgLpHkXJOmDvy90A3BQn-p774IRR40ng65Ki8/pub https://github.com/JohnGoodstadt/mobileSyncIOS https://culturedcode.com/things/blog/2010/12/state-of-sync-part-1/
+http://blog.danlew.net/2017/02/26/syncing-changes/
 
