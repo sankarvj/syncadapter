@@ -96,7 +96,7 @@ func (s *Pro) WhatToDoLogic1(slice interface{}, locallistitems []core.Passer) ([
 			}
 		}
 		//Check for new
-		if !presentInDB {
+		if !presentInDB && (serveritem).ServerKey() != 0 { //some rare cases server sends the empty model
 			s.DatabaseChanged = true
 			newItems = append(newItems, serveritem)
 		}
