@@ -102,6 +102,8 @@ For in depth implementation details refer this [example project](https://github.
 
  * Periodic needs to include GET first and then only it should post,put.
 
+ * Offline Attachments
+
 # Useful Links
 
 https://docs.microsoft.com/en-us/azure/app-service-mobile/app-service-mobile-offline-data-sync 
