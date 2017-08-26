@@ -17,12 +17,15 @@ type Cooker interface {
 	LocalId() int64
 	ServerKey() int64
 	SetLocalId(id int64)
-	PrepareLocal(forced bool)
+	SetServerKey(key int64)
+	PrepareLocal(forced bool, key int64)
 	Signal(technique Technique) bool
 }
 
 //Cooker implementations
-func (basemodel *BaseModel) PrepareLocal(forced bool) {
+// set forced = true if preparing object before update
+func (basemodel *BaseModel) PrepareLocal(forced bool, key int64) {
+	basemodel.Key = key
 	if basemodel.Id == 0 || forced { //storing ticket originally created at client
 		basemodel.Synced = false
 		basemodel.Updated = currentTime()
@@ -33,6 +36,10 @@ func (basemodel *BaseModel) PrepareLocal(forced bool) {
 
 func (basemodel *BaseModel) SetLocalId(id int64) {
 	basemodel.Id = id
+}
+
+func (basemodel *BaseModel) SetServerKey(key int64) {
+	basemodel.Key = key
 }
 
 func (basemodel BaseModel) ServerKey() int64 {

@@ -63,6 +63,15 @@ func (s *Pro) HotId(tablename string, localid int64) int64 {
 	return serverVal(s.DBInst, tablename, strconv.FormatInt(localid, 10))
 }
 
+//Append
+func (s *Pro) PrepareLocal(cooker core.Cooker, tablename string) {
+	if cooker.LocalId() != 0 {
+		cooker.PrepareLocal(true, s.HotId(tablename, cooker.LocalId()))
+	} else {
+		cooker.PrepareLocal(true, 0)
+	}
+}
+
 //Update the key and time value of the local db from the server obj (original implementation)
 func (s *Pro) coolItDown(key int64, updated int64) {
 	updateKey(s.DBInst, s.Tablename, key, s.Localid, updated)
@@ -163,7 +172,7 @@ func (s *Pro) Prepare(fn interface{}, params ...interface{}) {
 		return
 	}
 
-	cooker.PrepareLocal(performupdate)
+	cooker.PrepareLocal(performupdate, s.HotId(s.Tablename, cooker.LocalId()))
 
 	if performupdate {
 		f.Call(inputs)
