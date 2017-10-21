@@ -9,7 +9,7 @@ import (
 )
 
 func serverVal(db *sql.DB, tablename string, localid string) int64 {
-	if localid == "0" {
+	if localid == "0" || localid == "" {
 		return 0
 	}
 
@@ -23,7 +23,7 @@ func serverVal(db *sql.DB, tablename string, localid string) int64 {
 	defer closeRows(rows)
 
 	if err != nil {
-		log.Println("error while reading serverid for local id", err)
+		log.Println("error while reading serverid for local id ", " localid: ", localid, " error: ", err)
 		return 0
 	}
 

@@ -58,9 +58,15 @@ func (s *Pro) CoolItDown(cooker core.Cooker) {
 	s.coolItDown(cooker.LocalId(), cooker.UpdatedAt())
 }
 
-//Receive server key for the local id
+//HotId returns serverKey for the localId
 func (s *Pro) HotId(tablename string, localid int64) int64 {
 	return serverVal(s.DBInst, tablename, strconv.FormatInt(localid, 10))
+}
+
+//ColdId returns localId for serverKey
+func (s *Pro) ColdId(tableName string, serverId int64) (string, bool) {
+	localId, isAvailable := localkey(s.DBInst, tableName, serverId)
+	return strconv.FormatInt(localId, 10), isAvailable
 }
 
 //Append
@@ -95,6 +101,7 @@ func (s *Pro) WhatToDoLogic1(slice interface{}, locallistitems []core.Passer) ([
 		presentInDB := false
 		for j := 0; j < len(locallistitems); j++ {
 			localitem = locallistitems[j]
+
 			if (serveritem).ServerKey() == localitem.ServerKey() {
 				presentInDB = true
 				if needUpdate(serveritem.UpdatedAt(), localitem.UpdatedAt()) {

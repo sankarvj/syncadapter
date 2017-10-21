@@ -66,6 +66,9 @@ type Technique int64
 const (
 	BASIC_CREATE Technique = iota
 	BASIC_UPDATE
+	BASIC_NEW_ITEM
+	BASIC_UPDATED_ITEM
+	BASIC_DELETED_ITEM
 )
 
 func currentTime() int64 {
