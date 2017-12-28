@@ -151,6 +151,19 @@ func ScanFrozenData(db *sql.DB, tablename string) []core.BaseModel {
 	return basemodels
 }
 
+func deleteItem(db *sql.DB, tableName string, serverid int64) error {
+	stmt, err := db.Prepare("DELETE from " + tableName + " WHERE Key = " + strconv.FormatInt(serverid, 10))
+	defer stmt.Close()
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func closeRows(rows *sql.Rows) {
 	if rows != nil {
 		rows.Close()

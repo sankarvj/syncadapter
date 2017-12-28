@@ -51,11 +51,34 @@ func (s *Pro) ApiMeltDown(cooker core.Cooker) chan core.Cooker {
 	return bridgeForCooker
 }
 
+//Using channels prepare cooker for api object and waits for the result.
+//Once result receives it updates the database with the server key
+func (s *Pro) ApiMeltDownDeleteJob(jobRequest string) chan string {
+	bridgeForJobReq := make(chan string)
+	go func(bridgeForJobReq chan string) {
+		log.Println("Waiting for API call to finish")
+		jobDone := <-bridgeForJobReq
+		log.Println("Channel received successfully ")
+		if jobDone != "" {
+			log.Println("Channel Job Successfully Deleted")
+			deleteJob(s.DBInst, jobRequest)
+		} else {
+			log.Println("Channel Job Successfully Added")
+			addJob(s.DBInst, jobRequest)
+		}
+
+	}(bridgeForJobReq)
+
+	return bridgeForJobReq
+}
+
 //Basic funcs which sets db value manually
 
 //Update the key and time value of the local db from the server obj (wrapper for outside world)
 func (s *Pro) CoolItDown(cooker core.Cooker) {
-	s.coolItDown(cooker.LocalId(), cooker.UpdatedAt())
+	if cooker != nil {
+		s.coolItDown(cooker.LocalId(), cooker.UpdatedAt())
+	}
 }
 
 //HotId returns serverKey for the localId
@@ -76,6 +99,16 @@ func (s *Pro) PrepareLocal(cooker core.Cooker, tablename string) {
 	} else {
 		cooker.PrepareLocal(true, 0)
 	}
+}
+
+//ColdId returns localId for serverKey
+func (s *Pro) DeleteItem(tableName string, serverId int64) bool {
+	err := deleteItem(s.DBInst, tableName, serverId)
+	if err != nil {
+		log.Println("Error deleting item in recorder ", err)
+		return false
+	}
+	return true
 }
 
 //Update the key and time value of the local db from the server obj (original implementation)
