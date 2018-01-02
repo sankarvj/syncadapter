@@ -2,6 +2,7 @@ package performer
 
 import (
 	"github.com/sankarvj/syncadapter/core"
+	"github.com/sankarvj/syncadapter/utils"
 	"log"
 	"reflect"
 	"strconv"
@@ -11,7 +12,7 @@ import (
 func (s *Pro) CookForRemote(in interface{}) {
 	if inImplementsCooker(in) {
 		if s.Tablename == "" { //otherwise user might have set the tablename manually we don't need to set it
-			s.Tablename = Tablename(in)
+			s.Tablename = utils.Tablename(in)
 		}
 
 		if s.Localid == 0 {

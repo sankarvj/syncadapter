@@ -3,7 +3,6 @@ package performer
 import (
 	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/sankarvj/syncadapter/core"
 	"log"
 	"strconv"
 )
@@ -93,6 +92,19 @@ func updateKey(db *sql.DB, tablename string, key int64, id int64, updated int64)
 	}
 }
 
+func markAsDeletedLocally(db *sql.DB, tablename string, id int64) {
+	stmt, err := db.Prepare("update " + tablename + " set synced= 'false',updated = -1 where id=?")
+	defer stmt.Close()
+	if err != nil {
+		log.Println("Error Prepare mark as delete ", err)
+	}
+
+	_, err = stmt.Exec(id)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func localkey(db *sql.DB, tablename string, serverid int64) (int64, bool) {
 	localpresent := false
 	if serverid == 0 {
@@ -123,32 +135,6 @@ func localkey(db *sql.DB, tablename string, serverid int64) (int64, bool) {
 	}
 
 	return id, localpresent
-}
-
-func ScanFrozenData(db *sql.DB, tablename string) []core.BaseModel {
-	sql_readall := `
-	SELECT Id,Key,Updated,Synced FROM ` + tablename + `
-	WHERE Synced = 0
-	`
-	basemodels := make([]core.BaseModel, 0)
-	rows, err := db.Query(sql_readall)
-	defer closeRows(rows)
-	if err != nil {
-		log.Println("Error reading scanFrozenData ", err)
-		return basemodels
-	}
-
-	var basemodel core.BaseModel
-	for rows.Next() {
-		err = rows.Scan(&basemodel.Id, &basemodel.Key, &basemodel.Updated, &basemodel.Synced)
-		if err != nil {
-			log.Println("Error scan ", err)
-			return basemodels
-		}
-		basemodels = append(basemodels, basemodel)
-	}
-
-	return basemodels
 }
 
 func deleteItem(db *sql.DB, tableName string, serverid int64) error {

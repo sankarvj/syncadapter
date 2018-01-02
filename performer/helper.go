@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/sankarvj/syncadapter/core"
 	"reflect"
-	"strings"
 )
 
 func inImplementsCooker(in interface{}) bool {
@@ -25,16 +24,16 @@ func inImplementsPasser(in interface{}) bool {
 	}
 }
 
-func PasserSlice(slice interface{}) []core.Passer {
+func PasserSlice(slice interface{}) (ret1 []core.Passer) {
 	s := reflect.ValueOf(slice)
 	if s.Kind() != reflect.Slice {
 		panic("InterfaceSlice() given a non-slice type")
 	}
-	ret := make([]core.Passer, s.Len())
+	ret1 = make([]core.Passer, s.Len())
 	for i := 0; i < s.Len(); i++ {
-		ret[i] = s.Index(i).Interface().(core.Passer)
+		ret1[i] = s.Index(i).Interface().(core.Passer)
 	}
-	return ret
+	return ret1
 }
 
 func CookerSlice(slice interface{}) []interface{} {
@@ -55,10 +54,6 @@ func needUpdate(serverupdated int64, localupdated int64) bool {
 	} else {
 		return true
 	}
-}
-
-func Tablename(in interface{}) string {
-	return strings.ToLower(reflect.TypeOf(in).Elem().Name() + "s")
 }
 
 type SyncError struct {

@@ -7,7 +7,7 @@ import (
 type BaseModel struct {
 	Id      int64 //local id
 	Key     int64 //server id
-	Updated int64 //last updated time
+	Updated int64 //last updated time set updated = -1 if the record is
 	Synced  bool  //synced or not
 }
 
@@ -64,11 +64,12 @@ type Passer interface {
 type Technique int64
 
 const (
-	BASIC_CREATE Technique = iota
-	BASIC_UPDATE
-	BASIC_NEW_ITEM
-	BASIC_UPDATED_ITEM
-	BASIC_DELETED_ITEM
+	BASIC_CREATE       Technique = iota // from local to server
+	BASIC_UPDATE                        // from local to server
+	BASIC_DELETE                        // from local to server
+	BASIC_NEW_ITEM                      // from server to local
+	BASIC_UPDATED_ITEM                  // from server to local
+	BASIC_DELETED_ITEM                  // from server to local
 )
 
 func currentTime() int64 {

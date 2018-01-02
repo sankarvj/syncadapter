@@ -53,29 +53,32 @@ func (s *Pro) ApiMeltDown(cooker core.Cooker) chan core.Cooker {
 
 //Using channels prepare cooker for api object and waits for the result.
 //Once result receives it updates the database with the server key
-func (s *Pro) ApiMeltDownDeleteJob(jobRequest string) chan string {
-	bridgeForJobReq := make(chan string)
-	go func(bridgeForJobReq chan string) {
+func (s *Pro) ApiDeleteDown(cooker core.Cooker) chan core.Cooker {
+	s.CookForRemote(cooker)
+	bridgeForCooker := make(chan core.Cooker)
+
+	go func(bridgeForCooker chan core.Cooker) {
 		log.Println("Waiting for API call to finish")
-		jobDone := <-bridgeForJobReq
+		cooker = <-bridgeForCooker
 		log.Println("Channel received successfully ")
-		if jobDone != "" {
-			log.Println("Channel Job Successfully Deleted")
-			deleteJob(s.DBInst, jobRequest)
+		if cooker != nil {
+			s.DeleteItem(s.Tablename, cooker.LocalId())
+			log.Println("Channel cooled successfully")
 		} else {
-			log.Println("Channel Job Successfully Added")
-			addJob(s.DBInst, jobRequest)
+			s.markAsDeletedInLocal()
+			log.Println("Channel is still hot")
 		}
 
-	}(bridgeForJobReq)
+	}(bridgeForCooker)
 
-	return bridgeForJobReq
+	return bridgeForCooker
 }
 
 //Basic funcs which sets db value manually
 
 //Update the key and time value of the local db from the server obj (wrapper for outside world)
 func (s *Pro) CoolItDown(cooker core.Cooker) {
+	log.Println("Cool it down cooker --- ", cooker)
 	if cooker != nil {
 		s.coolItDown(cooker.LocalId(), cooker.UpdatedAt())
 	}
@@ -116,6 +119,11 @@ func (s *Pro) coolItDown(key int64, updated int64) {
 	updateKey(s.DBInst, s.Tablename, key, s.Localid, updated)
 }
 
+//Update the key and time value of the local db from the server obj (original implementation)
+func (s *Pro) markAsDeletedInLocal() {
+	markAsDeletedLocally(s.DBInst, s.Tablename, s.Localid)
+}
+
 //Logic to find new or updated items from the server list. It returns newitems and updateditems array
 func (s *Pro) WhatToDoLogic1(slice interface{}, locallistitems []core.Passer) ([]core.Passer, []core.Passer) {
 	serverlistitems := reflect.ValueOf(slice)
@@ -154,76 +162,53 @@ func (s *Pro) WhatToDoLogic1(slice interface{}, locallistitems []core.Passer) ([
 	return newItems, updatedItems
 }
 
-//Logic to find whether the single server item needs to be added or updated in the localdb
-func (s *Pro) WhatToDoLogic2(cooker core.Cooker, dblistitems []core.Passer) (dowhat int64) {
-	//HOT to COLD conversion
-	s.CookFromRemote(cooker)
-	index := -1
-	dowhat = NOTHING
-	for i := 0; i < len(dblistitems); i++ {
-		if (dblistitems[i]).ServerKey() == cooker.ServerKey() {
-			index = i
-		}
-	}
+// func (s *Pro) WhatToDoLogic2(slice interface{}, locallistitems []core.Cooker) ([]core.Passer, []core.Passer) {
+// 	serverlistitems := reflect.ValueOf(slice)
+// 	if serverlistitems.Kind() != reflect.Slice {
+// 		panic("InterfaceSlice() given a non-slice type")
+// 	}
 
-	if index != -1 { //already stored
-		if needUpdate(cooker.UpdatedAt(), dblistitems[index].UpdatedAt()) {
-			dowhat = UPDATE
-			cooker.SetLocalId(dblistitems[index].LocalId())
-		}
-	} else {
-		dowhat = CREATE
-	}
+// 	newItems := make([]core.Passer, 0)
+// 	updatedItems := make([]core.Passer, 0)
 
-	return dowhat
-}
+// 	var localitem core.Passer
+// 	for i := 0; i < serverlistitems.Len(); i++ {
+// 		serveritem := serverlistitems.Index(i).Addr().Interface().(core.Passer)
+// 		s.CookFromRemote(serveritem)
 
-//Not so useful logics
+// 		presentInDB := false
+// 		for j := 0; j < len(locallistitems); j++ {
+// 			localitem = locallistitems[j]
 
-//Expects a function followed by its params
-//One of the param must implement cooker interface. This is mandatory.
-//Cooker interface is responsible for datasync. Datasync skips if no params implements cooker
-func (s *Pro) Prepare(fn interface{}, params ...interface{}) {
-	var cooker core.Cooker
-	f := reflect.ValueOf(fn)
-	if f.Type().NumIn() != len(params) {
-		panic("incorrect number of parameters!")
-	}
-	inputs := make([]reflect.Value, len(params))
-	for k, in := range params {
-		if inImplementsCooker(in) {
-			cooker = in.(core.Cooker)
-		}
-		inputs[k] = reflect.ValueOf(in)
-	}
+// 			if (serveritem).ServerKey() == localitem.ServerKey() {
+// 				presentInDB = true
+// 				if needUpdate(serveritem.UpdatedAt(), localitem.UpdatedAt()) {
+// 					s.DatabaseChanged = true
+// 					serveritem.(core.Cooker).SetLocalId(localitem.LocalId())
+// 					updatedItems = append(updatedItems, serveritem)
+// 				}
+// 			}
+// 		}
+// 		//Check for new
+// 		if !presentInDB && (serveritem).ServerKey() != 0 { //some rare cases server sends the empty model
+// 			s.DatabaseChanged = true
+// 			newItems = append(newItems, serveritem)
+// 		}
+// 	}
 
-	var performupdate bool
-	if cooker != nil {
-		if cooker.LocalId() != 0 {
-			performupdate = true
-		} else {
-			//Incase if it created in local then 0 wil be set to Id #noproblem
-			//If it is coming from the server then key will be set to Id so key column will be updated
-			cooker.SetLocalId(cooker.ServerKey())
-		}
+// 	for i := 0; i < len(locallistitems); i++ {
+// 		localitem := locallistitems[i]
+// 		log.Println("localitem.ServerKey() --- ", localitem.ServerKey())
+// 		if localitem.ServerKey() == 0 {
+// 			//Try to sync here
+// 			periodic := technique.CreatePeriodic(s.DBInst)
+// 			periodic.Models = append(periodic.Models, core.Cooker(localitem))
+// 			periodic.CheckPeriodic()
+// 		}
+// 	}
 
-	} else {
-		oops("Cannot perform datasync no param implements cooker...", true)
-		return
-	}
-
-	cooker.PrepareLocal(performupdate, s.HotId(s.Tablename, cooker.LocalId()))
-
-	if performupdate {
-		f.Call(inputs)
-	} else {
-		result := f.Call(inputs)
-		//find the last inserted id
-		s.Localid = result[0].Interface().(int64)
-		cooker.SetLocalId(s.Localid)
-	}
-
-}
+// 	return newItems, updatedItems
+// }
 
 func (s *Pro) Push(cooker core.Cooker) bool {
 	s.CookForRemote(cooker)
