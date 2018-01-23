@@ -5,10 +5,10 @@ import (
 )
 
 type BaseModel struct {
-	Id      int64 //local id
-	Key     int64 //server id
-	Updated int64 //last updated time set updated = -1 if the record is
-	Synced  bool  //synced or not
+	Id      int64  //local id
+	Key     *int64 //server id
+	Updated int64  //last updated time set updated = -1 if the record is
+	Synced  bool   //synced or not
 }
 
 //Cooker interface
@@ -18,14 +18,16 @@ type Cooker interface {
 	ServerKey() int64
 	SetLocalId(id int64)
 	SetServerKey(key int64)
-	PrepareLocal(forced bool, key int64)
+	SetSynced(isSynced bool)
+	PrepareLocal(forced bool)
+	IsServerKeyValid() bool
 	Signal(technique Technique) bool
 }
 
 //Cooker implementations
 // set forced = true if preparing object before update
-func (basemodel *BaseModel) PrepareLocal(forced bool, key int64) {
-	basemodel.Key = key
+func (basemodel *BaseModel) PrepareLocal(forced bool) {
+	basemodel.Key = nil
 	if basemodel.Id == 0 || forced { //storing ticket originally created at client
 		basemodel.Synced = false
 		basemodel.Updated = currentTime()
@@ -39,11 +41,26 @@ func (basemodel *BaseModel) SetLocalId(id int64) {
 }
 
 func (basemodel *BaseModel) SetServerKey(key int64) {
-	basemodel.Key = key
+	basemodel.Key = &key
+}
+
+func (basemodel *BaseModel) SetSynced(isSynced bool) {
+	basemodel.Synced = isSynced
+	basemodel.Updated = currentTime()
 }
 
 func (basemodel BaseModel) ServerKey() int64 {
-	return basemodel.Key
+	if basemodel.Key == nil {
+		return 0
+	}
+	return *basemodel.Key
+}
+
+func (basemodel BaseModel) ServerKeyIntValue() int64 {
+	if basemodel.Key == nil {
+		return 0
+	}
+	return *basemodel.Key
 }
 
 func (basemodel BaseModel) UpdatedAt() int64 {
@@ -54,11 +71,19 @@ func (basemodel BaseModel) LocalId() int64 {
 	return basemodel.Id
 }
 
+func (basemodel BaseModel) IsServerKeyValid() bool {
+	if basemodel.Key == nil {
+		return false
+	}
+	return true
+}
+
 //Passer interface
 type Passer interface {
 	ServerKey() int64
 	UpdatedAt() int64
 	LocalId() int64
+	IsServerKeyValid() bool
 }
 
 type Technique int64

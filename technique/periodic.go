@@ -44,7 +44,7 @@ func (g *Periodic) CheckPeriodic() {
 		basemodels := scanFrozenData(g.DBInst, utils.Tablename(g.Models[i]))
 		for j := 0; j < len(basemodels); j++ {
 			basemodel = basemodels[j]
-			if basemodel.Key == 0 { //Create
+			if basemodel.Key == nil { //Create
 				technique = core.BASIC_CREATE
 			} else if basemodel.Updated == -1 && basemodel.Synced == false { // record deleted
 				technique = core.BASIC_DELETE

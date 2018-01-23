@@ -97,11 +97,16 @@ func (s *Pro) ColdId(tableName string, serverId int64) (string, bool) {
 
 //Append
 func (s *Pro) PrepareLocal(cooker core.Cooker, tablename string) {
-	if cooker.LocalId() != 0 {
-		cooker.PrepareLocal(true, s.HotId(tablename, cooker.LocalId()))
+	if cooker.LocalId() != 0 { //Takes place during update scenerio
+		cooker.SetSynced(false)
+		cooker.SetServerKey(s.HotId(tablename, cooker.LocalId()))
 	} else {
-		cooker.PrepareLocal(true, 0)
+		cooker.PrepareLocal(true)
 	}
+}
+
+func (s *Pro) PrepareRemote(in interface{}) {
+	s.CookForRemote(in)
 }
 
 //ColdId returns localId for serverKey
@@ -139,9 +144,13 @@ func (s *Pro) WhatToDoLogic1(slice interface{}, locallistitems []core.Passer) ([
 		serveritem := serverlistitems.Index(i).Addr().Interface().(core.Passer)
 		s.CookFromRemote(serveritem)
 
+		log.Println("serveritem ===> ", serveritem.ServerKey())
+
 		presentInDB := false
 		for j := 0; j < len(locallistitems); j++ {
 			localitem = locallistitems[j]
+
+			log.Println("localitem ===> ", localitem.ServerKey())
 
 			if (serveritem).ServerKey() == localitem.ServerKey() {
 				presentInDB = true
@@ -153,7 +162,7 @@ func (s *Pro) WhatToDoLogic1(slice interface{}, locallistitems []core.Passer) ([
 			}
 		}
 		//Check for new
-		if !presentInDB && (serveritem).ServerKey() != 0 { //some rare cases server sends the empty model
+		if !presentInDB && (serveritem).IsServerKeyValid() { //some rare cases server sends the empty model
 			s.DatabaseChanged = true
 			newItems = append(newItems, serveritem)
 		}
@@ -214,7 +223,7 @@ func (s *Pro) Push(cooker core.Cooker) bool {
 	s.CookForRemote(cooker)
 
 	var remoteUpdated bool
-	if cooker.ServerKey() != 0 { //update
+	if cooker.IsServerKeyValid() { //update
 		remoteUpdated = cooker.Signal(core.BASIC_UPDATE)
 	} else { //create
 		remoteUpdated = cooker.Signal(core.BASIC_CREATE)

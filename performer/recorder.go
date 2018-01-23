@@ -12,7 +12,7 @@ func serverVal(db *sql.DB, tablename string, localid string) int64 {
 		return 0
 	}
 
-	var key int64
+	var key *int64
 	sql_readall := `
 	SELECT key FROM ` + tablename + `
 	WHERE id  = ` + localid + ` LIMIT 1` + `
@@ -30,11 +30,15 @@ func serverVal(db *sql.DB, tablename string, localid string) int64 {
 		err = rows.Scan(&key)
 		if err != nil {
 			log.Println("error while scaning serverid for local id", err)
-			key = 0
+			*key = 0
 		}
 	}
 
-	return key
+	if key == nil {
+		return 0
+	}
+
+	return *key
 }
 
 func localVal(db *sql.DB, tablename string, colname string, localid string) string {
