@@ -20,11 +20,7 @@ func (s *Pro) CookForRemote(in interface{}) {
 			s.Localid = cooker.LocalId()
 		}
 
-		log.Println("Tablename -->", s.Tablename)
-		log.Println("Localid -->", s.Localid)
-
 		serverid := serverVal(s.DBInst, s.Tablename, strconv.FormatInt(s.Localid, 10))
-		log.Println("serverid -->", serverid)
 		reflect.ValueOf(in).Elem().FieldByName("Id").SetInt(serverid)
 		cooker.SetServerKey(serverid)
 
