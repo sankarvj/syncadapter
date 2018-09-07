@@ -17,7 +17,7 @@ type Cooker interface {
 	LocalId() int64
 	ServerKey() int64
 	SetLocalId(id int64)
-	SetServerKey(key int64)
+	SetServerKey(key *int64)
 	SetSynced(isSynced bool)
 	PrepareLocal(forced bool)
 	IsServerKeyValid() bool
@@ -40,8 +40,8 @@ func (basemodel *BaseModel) SetLocalId(id int64) {
 	basemodel.Id = id
 }
 
-func (basemodel *BaseModel) SetServerKey(key int64) {
-	basemodel.Key = &key
+func (basemodel *BaseModel) SetServerKey(key *int64) {
+	basemodel.Key = key
 }
 
 func (basemodel *BaseModel) SetSynced(isSynced bool) {

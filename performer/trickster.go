@@ -22,7 +22,7 @@ func (s *Pro) CookForRemote(in interface{}) {
 
 		serverid := serverVal(s.DBInst, s.Tablename, strconv.FormatInt(s.Localid, 10))
 		reflect.ValueOf(in).Elem().FieldByName("Id").SetInt(serverid)
-		cooker.SetServerKey(serverid)
+		cooker.SetServerKey(&serverid)
 
 		//Form references using tags
 		objtype := reflect.TypeOf(in).Elem()
@@ -35,7 +35,7 @@ func (s *Pro) CookForRemote(in interface{}) {
 				ref_col_local_val := localVal(s.DBInst, s.Tablename, field.Name, strconv.FormatInt(s.Localid, 10))
 				sercolval := serverVal(s.DBInst, reference_table, ref_col_local_val)
 				reflect.ValueOf(in).Elem().Field(i).SetInt(sercolval)
-				log.Println("sercolval -->", sercolval)
+				//log.Println("sercolval -->", sercolval)
 			}
 		}
 	} else {
@@ -46,7 +46,8 @@ func (s *Pro) CookForRemote(in interface{}) {
 func (s *Pro) CookFromRemote(in interface{}) {
 	if inImplementsCooker(in) || inImplementsPasser(in) {
 		cooker := in.(core.Cooker)
-		cooker.SetServerKey(reflect.ValueOf(in).Elem().FieldByName("Id").Int())
+		key := reflect.ValueOf(in).Elem().FieldByName("Id").Int()
+		cooker.SetServerKey(&key)
 		reflect.ValueOf(in).Elem().FieldByName("Id").SetInt(0)
 		reflect.ValueOf(in).Elem().FieldByName("Synced").SetBool(true)
 		//Form references using tags

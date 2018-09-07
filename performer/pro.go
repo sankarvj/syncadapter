@@ -99,7 +99,13 @@ func (s *Pro) ColdId(tableName string, serverId int64) (string, bool) {
 func (s *Pro) PrepareLocal(cooker core.Cooker, tablename string) {
 	if cooker.LocalId() != 0 { //Takes place during update scenerio
 		cooker.SetSynced(false)
-		cooker.SetServerKey(s.HotId(tablename, cooker.LocalId()))
+		key := s.HotId(tablename, cooker.LocalId())
+		if key == 0 {
+			cooker.SetServerKey(nil)
+		} else {
+			cooker.SetServerKey(&key)
+		}
+
 	} else {
 		cooker.PrepareLocal(true)
 	}
@@ -144,13 +150,13 @@ func (s *Pro) WhatToDoLogic1(slice interface{}, locallistitems []core.Passer) ([
 		serveritem := serverlistitems.Index(i).Addr().Interface().(core.Passer)
 		s.CookFromRemote(serveritem)
 
-		log.Println("serveritem ===> ", serveritem.ServerKey())
+		//log.Println("serveritem ===> ", serveritem.ServerKey())
 
 		presentInDB := false
 		for j := 0; j < len(locallistitems); j++ {
 			localitem = locallistitems[j]
 
-			log.Println("localitem ===> ", localitem.ServerKey())
+			//log.Println("localitem ===> ", localitem.ServerKey())
 
 			if (serveritem).ServerKey() == localitem.ServerKey() {
 				presentInDB = true
